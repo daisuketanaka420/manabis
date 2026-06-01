@@ -1,0 +1,748 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>数学 復習トラッカー</title>
+<style>
+:root {
+  --bg:#f4f1ea; --card:#fffefb; --ink:#2a2722; --muted:#8a8275; --line:#e3ddd0;
+  --s2:#1a7a4c; --s1:#3b82c4; --s0:#d98a23; --sx:#c4453b; --accent:#b5472f;
+}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+body{font-family:"Hiragino Sans","Hiragino Kaku Gothic ProN",system-ui,sans-serif;background:var(--bg);color:var(--ink);}
+/* HEADER */
+header{position:sticky;top:0;z-index:50;background:var(--ink);color:#fff;padding:14px 16px 0;box-shadow:0 2px 12px rgba(0,0,0,.15);}
+.hdr-top{display:flex;align-items:center;gap:8px;padding-bottom:10px;}
+h1{font-size:17px;font-weight:700;letter-spacing:.04em;}
+.sub{font-size:11px;color:#c9c0b0;margin-top:2px;}
+.stats{display:flex;gap:8px;}
+.stat{flex:1;background:rgba(255,255,255,.08);border-radius:8px;padding:6px 4px;text-align:center;}
+.stat .n{font-size:18px;font-weight:700;line-height:1;}
+.stat .l{font-size:9px;color:#c9c0b0;margin-top:3px;}
+/* TABBAR */
+.tabbar{display:flex;background:var(--ink);border-top:1px solid rgba(255,255,255,.1);margin-top:10px;}
+.tab{flex:1;text-align:center;padding:11px 4px;font-size:12px;font-weight:600;color:#a09888;cursor:pointer;border-bottom:3px solid transparent;transition:.15s;}
+.tab.on{color:#fff;border-bottom-color:var(--accent);}
+/* PAGES */
+.page{display:none;padding-bottom:80px;}
+.page.on{display:block;}
+/* FILTERS */
+.filters{display:flex;gap:6px;padding:10px 12px;overflow-x:auto;background:var(--card);border-bottom:1px solid var(--line);}
+.filters::-webkit-scrollbar{display:none;}
+.chip{flex-shrink:0;padding:6px 13px;border-radius:20px;background:#ece6d9;color:var(--muted);font-size:13px;font-weight:600;cursor:pointer;}
+.chip.active{background:var(--ink);color:#fff;}
+.legend{padding:9px 14px;font-size:10.5px;color:var(--muted);line-height:1.7;background:var(--card);margin:8px 10px;border-radius:12px;}
+.legend b{color:var(--ink);}
+/* PIN BANNER */
+.pin-banner{margin:0 10px 4px;border-radius:12px 12px 0 0;background:var(--accent);color:#fff;padding:7px 14px;font-size:11px;font-weight:700;display:flex;align-items:center;gap:6px;}
+.pin-banner.hidden{display:none;}
+.pin-dot{width:8px;height:8px;border-radius:50%;background:#fff;opacity:.85;flex-shrink:0;animation:pulse 1.4s infinite;}
+@keyframes pulse{0%,100%{opacity:.5;transform:scale(1)}50%{opacity:1;transform:scale(1.3)}}
+/* GROUPS & ROWS */
+.group-wrap{margin-bottom:4px;}
+.group-wrap.pinned>.group-head{background:linear-gradient(90deg,#b5472f22,transparent);border-left:3px solid var(--accent);padding-left:13px;}
+.group-head{padding:14px 16px 6px;font-size:12px;font-weight:700;color:var(--accent);letter-spacing:.08em;display:flex;align-items:center;gap:8px;}
+.group-head::after{content:"";flex:1;height:1px;background:var(--line);}
+.row{background:var(--card);margin:0 10px 6px;border-radius:12px;padding:11px 12px;box-shadow:0 1px 3px rgba(0,0,0,.05);}
+.row.juuten-row{border-left:3px solid var(--sx);}
+.row-top{display:flex;align-items:center;gap:10px;cursor:pointer;}
+.row-info{flex:1;min-width:0;}
+.row-title{font-size:14px;font-weight:600;line-height:1.35;}
+.row-meta{font-size:10.5px;color:var(--muted);margin-top:3px;display:flex;gap:5px;flex-wrap:wrap;align-items:center;}
+.badge{background:#ece6d9;padding:1px 6px;border-radius:4px;font-weight:600;}
+.pri.p3{color:#c4453b;font-weight:700;}.pri.p2{color:#d98a23;font-weight:700;}.pri.p1{color:#3b82c4;font-weight:700;}
+.juuten{display:inline-flex;align-items:center;gap:3px;background:#c4453b;color:#fff;font-size:10px;font-weight:800;padding:2px 7px 2px 5px;border-radius:5px;letter-spacing:.04em;}
+.next{color:var(--s1);font-weight:700;font-size:10.5px;}.next.due{color:var(--sx);}
+.cur-mark{width:30px;height:30px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:17px;font-weight:700;flex-shrink:0;background:#ece6d9;color:var(--muted);}
+.cur-mark.s2{background:var(--s2);color:#fff;}.cur-mark.s1{background:var(--s1);color:#fff;}
+.cur-mark.s0{background:var(--s0);color:#fff;}.cur-mark.sx{background:var(--sx);color:#fff;}
+.cnt{font-size:9px;color:var(--muted);margin-top:2px;text-align:center;}
+/* PANEL */
+.panel{max-height:0;overflow:hidden;transition:max-height .25s ease;}
+.panel.open{max-height:1000px;}
+.panel-in{padding:12px 2px 4px;border-top:1px dashed var(--line);margin-top:11px;}
+.mk-row{display:flex;gap:7px;}
+.mk{flex:1;height:46px;border-radius:10px;border:2px solid var(--line);background:#fff;font-size:22px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--muted);transition:.12s;}
+.mk:active{transform:scale(.9);}
+.mk.s2.sel{background:var(--s2);border-color:var(--s2);color:#fff;}
+.mk.s1.sel{background:var(--s1);border-color:var(--s1);color:#fff;}
+.mk.s0.sel{background:var(--s0);border-color:var(--s0);color:#fff;}
+.mk.sx.sel{background:var(--sx);border-color:var(--sx);color:#fff;}
+.cmt{width:100%;margin-top:9px;border:1.5px solid var(--line);border-radius:9px;padding:9px 11px;font-size:13px;font-family:inherit;background:#fff;resize:none;color:var(--ink);}
+.cmt:focus{outline:none;border-color:var(--accent);}
+.rec-btn{width:100%;margin-top:9px;height:44px;border:none;border-radius:10px;background:var(--ink);color:#fff;font-size:15px;font-weight:700;cursor:pointer;transition:.15s;}
+.rec-btn:disabled{background:#cfc8ba;cursor:not-allowed;}
+.rec-btn:active:not(:disabled){transform:scale(.98);}
+.hint{font-size:10.5px;color:var(--muted);margin-top:6px;text-align:center;}
+/* HISTORY */
+.hist{margin-top:12px;}
+.hist-h{font-size:11px;font-weight:700;color:var(--accent);margin-bottom:6px;letter-spacing:.05em;}
+.hist-item{padding:8px 0;border-top:1px solid var(--line);cursor:pointer;}
+.hist-item:first-of-type{border-top:none;}
+.hist-row{display:flex;gap:9px;align-items:flex-start;}
+.hi-mark{width:24px;height:24px;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;flex-shrink:0;}
+.hi-mark.s2{background:var(--s2);color:#fff;}.hi-mark.s1{background:var(--s1);color:#fff;}
+.hi-mark.s0{background:var(--s0);color:#fff;}.hi-mark.sx{background:var(--sx);color:#fff;}
+.hi-body{flex:1;min-width:0;}
+.hi-date{font-size:10.5px;color:var(--muted);}
+.hi-cmt{font-size:12px;margin-top:2px;line-height:1.4;word-break:break-word;}
+.hi-hint{font-size:10px;color:var(--muted);margin-top:3px;font-style:italic;}
+.hi-actions{display:flex;gap:6px;margin-top:3px;}
+.hi-del{color:var(--sx);font-size:11px;cursor:pointer;padding:2px 0;flex-shrink:0;}
+/* EDIT FORM inside history item */
+.edit-form{margin-top:8px;padding:10px;background:#f4f1ea;border-radius:9px;}
+.edit-mk-row{display:flex;gap:6px;margin-bottom:8px;}
+.edit-mk{flex:1;height:38px;border-radius:8px;border:2px solid var(--line);background:#fff;font-size:18px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--muted);transition:.12s;}
+.edit-mk.s2.sel{background:var(--s2);border-color:var(--s2);color:#fff;}
+.edit-mk.s1.sel{background:var(--s1);border-color:var(--s1);color:#fff;}
+.edit-mk.s0.sel{background:var(--s0);border-color:var(--s0);color:#fff;}
+.edit-mk.sx.sel{background:var(--sx);border-color:var(--sx);color:#fff;}
+.edit-btns{display:flex;gap:6px;margin-top:6px;}
+.save-btn{flex:2;height:36px;border:none;border-radius:8px;background:var(--ink);color:#fff;font-size:13px;font-weight:700;cursor:pointer;}
+.cancel-btn{flex:1;height:36px;border:1.5px solid var(--line);border-radius:8px;background:#fff;color:var(--muted);font-size:13px;cursor:pointer;}
+/* YORI-RIKAI TAB */
+.yori-info{padding:10px 14px;font-size:11px;color:var(--muted);background:var(--card);margin:8px 10px;border-radius:10px;line-height:1.7;}
+.yori-info b{color:var(--accent);}
+.yori-row{background:var(--card);margin:0 10px 6px;border-radius:12px;padding:11px 12px;box-shadow:0 1px 3px rgba(0,0,0,.05);border-left:3px solid var(--sx);}
+.yori-title{font-size:14px;font-weight:600;}
+.yori-meta{font-size:10.5px;color:var(--muted);margin-top:4px;display:flex;gap:6px;flex-wrap:wrap;align-items:center;}
+/* DB PAGE */
+.db-toolbar{display:flex;gap:8px;padding:12px 10px;background:var(--card);border-bottom:1px solid var(--line);align-items:center;flex-wrap:wrap;}
+.db-toolbar select{flex:1;min-width:80px;padding:7px 10px;border:1.5px solid var(--line);border-radius:8px;font-size:13px;font-family:inherit;background:#fff;color:var(--ink);}
+.dl-btn{flex-shrink:0;padding:8px 16px;background:var(--accent);color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap;}
+.db-count{font-size:11px;color:var(--muted);width:100%;}
+.tbl-wrap{overflow-x:auto;padding:0 10px 20px;margin-top:10px;}
+table{width:100%;border-collapse:collapse;font-size:12px;background:var(--card);border-radius:10px;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,.07);}
+th{background:var(--ink);color:#fff;padding:9px 10px;text-align:left;font-size:11px;white-space:nowrap;}
+td{padding:8px 10px;border-bottom:1px solid var(--line);vertical-align:top;}
+tr:last-child td{border-bottom:none;}
+tr:nth-child(even) td{background:#faf8f3;}
+.tm{display:inline-block;padding:2px 7px;border-radius:5px;font-weight:700;font-size:12px;color:#fff;}
+.tm.s2{background:var(--s2);}.tm.s1{background:var(--s1);}.tm.s0{background:var(--s0);}.tm.sx{background:var(--sx);}
+.empty{text-align:center;color:var(--muted);padding:40px;font-size:13px;}
+/* TOAST */
+/* MODAL */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:9999;display:flex;align-items:flex-end;justify-content:center;}
+.modal-overlay.hidden{display:none;}
+.modal{background:var(--card);width:100%;max-width:520px;border-radius:20px 20px 0 0;max-height:75vh;display:flex;flex-direction:column;overflow:hidden;box-shadow:0 -4px 24px rgba(0,0,0,.25);}
+.modal-head{padding:14px 16px 10px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--line);}
+.modal-title{font-size:15px;font-weight:700;}
+.modal-close{font-size:22px;color:var(--muted);cursor:pointer;padding:0 6px;line-height:1;}
+.modal-list{overflow-y:auto;padding:8px 0 24px;}
+.modal-item{display:flex;align-items:center;gap:10px;padding:11px 16px;cursor:pointer;border-bottom:1px solid var(--line);}
+.modal-item:last-child{border-bottom:none;}
+.modal-item:active{background:#ede8df;}
+.modal-item-info{flex:1;min-width:0;}
+.modal-item-title{font-size:13px;font-weight:600;line-height:1.3;}
+.modal-item-sub{font-size:10.5px;color:var(--muted);margin-top:2px;}
+.modal-item-mid{font-size:9px;color:#b0a898;margin-top:2px;}
+.modal-arrow{color:var(--muted);font-size:18px;flex-shrink:0;}
+/* stat タップフィードバック */
+.stat[data-mark]{cursor:pointer;}
+.stat[data-mark]:active{transform:scale(.92);opacity:.75;}
+.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%) translateY(20px);background:var(--s2);color:#fff;padding:11px 22px;border-radius:24px;font-size:14px;font-weight:700;opacity:0;transition:.25s;z-index:100;box-shadow:0 4px 16px rgba(0,0,0,.25);pointer-events:none;white-space:nowrap;}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+</style>
+</head>
+<body>
+<header>
+  <div class="hdr-top">
+    <div style="flex:1"><h1>数学 復習トラッカー</h1><div class="sub">河合塾マナビス ／ 選んで「記録する」</div>
+    </div>
+    <div style="text-align:right">
+      <div id="sync-status" style="font-size:10px;color:#a09888;margin-bottom:4px">💾 未保存</div>
+      <button onclick="syncToGas()" style="font-size:11px;padding:5px 10px;border:none;border-radius:8px;background:rgba(255,255,255,.15);color:#fff;cursor:pointer;font-weight:600">☁️ 保存</button></div>
+  </div>
+  <div class="stats" id="stats"></div>
+  <div class="tabbar">
+    <div class="tab on" data-tab="track">📚 講義一覧</div>
+    <div class="tab" data-tab="yori">⚠️ 要理解</div>
+    <div class="tab" data-tab="db">🗃 記録一覧</div>
+  </div>
+</header>
+
+<div class="page on" id="page-track">
+  <div class="filters" id="filters"></div>
+  <div class="legend"><b>◎</b>ほぼカンペキ→1回 ／ <b>○</b>理解した→2回 ／ <b>△</b>要理解→3回 ／ <b>×</b>◎になるまで<br>講義をタップ → マーク → コメント（任意）→「記録する」／ 履歴をタップで編集</div>
+  <div id="pin-banner" class="pin-banner hidden"><div class="pin-dot"></div>📌 <span id="pin-label"></span> を最上部に表示中</div>
+  <div id="list-track"></div>
+</div>
+
+<div class="page" id="page-yori">
+  <div class="yori-info"><b>⚠️ 要理解リスト</b>：★★★・★★ の講義で、最新マークが <b>△（要理解）</b> または <b>×（未達成）</b> のものです。<br>重点分野で理解が追いついていない講義を集中的に復習しましょう。</div>
+  <div id="list-yori"></div>
+</div>
+
+<div class="page" id="page-db">
+  <div class="db-toolbar">
+    <select id="db-subj"><option value="">科目：すべて</option></select>
+    <select id="db-mark"><option value="">マーク：すべて</option>
+      <option value="2">◎</option><option value="1">○</option>
+      <option value="0">△</option><option value="x">×</option>
+    </select>
+    <button class="dl-btn" id="dl-btn">⬇ CSV出力</button>
+    <div class="db-count" id="db-count"></div>
+  </div>
+  <div class="tbl-wrap"><table>
+    <thead><tr><th>日時</th><th>科目</th><th>単元</th><th>講</th><th>講義名</th><th>マーク</th><th>次回</th><th>コメント</th></tr></thead>
+    <tbody id="db-body"></tbody>
+  </table></div>
+</div>
+<div class="modal-overlay hidden" id="modal-overlay" onclick="closeModal()">
+  <div class="modal" onclick="event.stopPropagation()">
+    <div class="modal-head">
+      <div class="modal-title" id="modal-title"></div>
+      <div class="modal-close" onclick="closeModal()">✕</div>
+    </div>
+    <div class="modal-list" id="modal-list"></div>
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+const DATA=[{"no": 1, "subject": "I", "unitNum": "①", "unitName": "数と式", "level": "2", "lecture": 1, "lectureName": "展開と因数分解", "priority": "-", "mid": "M-001"}, {"no": 2, "subject": "I", "unitNum": "①", "unitName": "数と式", "level": "2", "lecture": 2, "lectureName": "平方根、絶対値", "priority": "-", "mid": "M-002"}, {"no": 3, "subject": "I", "unitNum": "①", "unitName": "数と式", "level": "2", "lecture": 3, "lectureName": "1次不等式、絶対値と方程式・不等式", "priority": "-", "mid": "M-003"}, {"no": 4, "subject": "I", "unitNum": "②", "unitName": "集合と命題", "level": "2", "lecture": 1, "lectureName": "集合、必要条件と十分条件", "priority": "-", "mid": "M-004"}, {"no": 5, "subject": "I", "unitNum": "②", "unitName": "集合と命題", "level": "2", "lecture": 2, "lectureName": "論証", "priority": "-", "mid": "M-005"}, {"no": 6, "subject": "I", "unitNum": "③", "unitName": "2次関数", "level": "2", "lecture": 1, "lectureName": "2次関数のグラフ", "priority": "★", "mid": "M-006"}, {"no": 7, "subject": "I", "unitNum": "③", "unitName": "2次関数", "level": "2", "lecture": 2, "lectureName": "最大値、最小値(I)", "priority": "★", "mid": "M-007"}, {"no": 8, "subject": "I", "unitNum": "③", "unitName": "2次関数", "level": "2", "lecture": 3, "lectureName": "最大値、最小値(II)", "priority": "★", "mid": "M-008"}, {"no": 9, "subject": "I", "unitNum": "③", "unitName": "2次関数", "level": "2", "lecture": 4, "lectureName": "2次方程式、2次不等式(I)", "priority": "★", "mid": "M-009"}, {"no": 10, "subject": "I", "unitNum": "③", "unitName": "2次関数", "level": "2", "lecture": 5, "lectureName": "2次方程式、2次不等式(II)", "priority": "★", "mid": "M-010"}, {"no": 11, "subject": "I", "unitNum": "③", "unitName": "2次関数", "level": "2", "lecture": 6, "lectureName": "総合演習(I)", "priority": "★", "mid": "M-011"}, {"no": 12, "subject": "I", "unitNum": "③", "unitName": "2次関数", "level": "2", "lecture": 7, "lectureName": "総合演習(II)", "priority": "★", "mid": "M-012"}, {"no": 13, "subject": "I", "unitNum": "④", "unitName": "図形と計量", "level": "2", "lecture": 1, "lectureName": "三角比の基本", "priority": "★★", "mid": "M-013"}, {"no": 14, "subject": "I", "unitNum": "④", "unitName": "図形と計量", "level": "2", "lecture": 2, "lectureName": "相互関係、不等式", "priority": "-", "mid": "M-014"}, {"no": 15, "subject": "I", "unitNum": "④", "unitName": "図形と計量", "level": "2", "lecture": 3, "lectureName": "正弦定理、三角形の面積", "priority": "★★★", "mid": "M-015"}, {"no": 16, "subject": "I", "unitNum": "④", "unitName": "図形と計量", "level": "2", "lecture": 4, "lectureName": "余弦定理", "priority": "★★", "mid": "M-016"}, {"no": 17, "subject": "I", "unitNum": "④", "unitName": "図形と計量", "level": "2", "lecture": 5, "lectureName": "総合演習(I)", "priority": "-", "mid": "M-017"}, {"no": 18, "subject": "I", "unitNum": "④", "unitName": "図形と計量", "level": "2", "lecture": 6, "lectureName": "総合演習(II)", "priority": "-", "mid": "M-018"}, {"no": 19, "subject": "I", "unitNum": "⑤", "unitName": "データの分析", "level": "2", "lecture": 1, "lectureName": "データの整理と代表値", "priority": "△", "mid": "M-019"}, {"no": 20, "subject": "I", "unitNum": "⑤", "unitName": "データの分析", "level": "2", "lecture": 2, "lectureName": "分散、標準偏差", "priority": "△", "mid": "M-020"}, {"no": 21, "subject": "I", "unitNum": "⑤", "unitName": "データの分析", "level": "2", "lecture": 3, "lectureName": "データの相関と散布図", "priority": "△", "mid": "M-021"}, {"no": 22, "subject": "A", "unitNum": "⑥", "unitName": "場合の数", "level": "2", "lecture": 1, "lectureName": "集合の要素の個数、場合の数", "priority": "★★", "mid": "M-022"}, {"no": 23, "subject": "A", "unitNum": "⑥", "unitName": "場合の数", "level": "2", "lecture": 2, "lectureName": "順列", "priority": "★★", "mid": "M-023"}, {"no": 24, "subject": "A", "unitNum": "⑥", "unitName": "場合の数", "level": "2", "lecture": 3, "lectureName": "組合せ", "priority": "★★", "mid": "M-024"}, {"no": 25, "subject": "A", "unitNum": "⑥", "unitName": "場合の数", "level": "2", "lecture": 4, "lectureName": "いろいろな順列・組合せ(I)", "priority": "★★", "mid": "M-025"}, {"no": 26, "subject": "A", "unitNum": "⑥", "unitName": "場合の数", "level": "2", "lecture": 5, "lectureName": "いろいろな順列・組合せ(II)", "priority": "★★", "mid": "M-026"}, {"no": 27, "subject": "A", "unitNum": "⑦", "unitName": "確率", "level": "2", "lecture": 1, "lectureName": "確率の基本", "priority": "★★", "mid": "M-027"}, {"no": 28, "subject": "A", "unitNum": "⑦", "unitName": "確率", "level": "2", "lecture": 2, "lectureName": "余事象の確率", "priority": "★★", "mid": "M-028"}, {"no": 29, "subject": "A", "unitNum": "⑦", "unitName": "確率", "level": "2", "lecture": 3, "lectureName": "独立な試行の確率", "priority": "★★", "mid": "M-029"}, {"no": 30, "subject": "A", "unitNum": "⑦", "unitName": "確率", "level": "2", "lecture": 4, "lectureName": "条件付き確率", "priority": "★★", "mid": "M-030"}, {"no": 31, "subject": "A", "unitNum": "⑦", "unitName": "確率", "level": "2", "lecture": 5, "lectureName": "期待値", "priority": "★★", "mid": "M-031"}, {"no": 32, "subject": "A", "unitNum": "⑧", "unitName": "図形の性質", "level": "2", "lecture": 1, "lectureName": "三角形の外心・内心・垂心", "priority": "-", "mid": "M-032"}, {"no": 33, "subject": "A", "unitNum": "⑧", "unitName": "図形の性質", "level": "2", "lecture": 2, "lectureName": "三角形の重心、チェバの定理、メネラウスの定理", "priority": "-", "mid": "M-033"}, {"no": 34, "subject": "A", "unitNum": "⑧", "unitName": "図形の性質", "level": "2", "lecture": 3, "lectureName": "円の性質(I)", "priority": "-", "mid": "M-034"}, {"no": 35, "subject": "A", "unitNum": "⑧", "unitName": "図形の性質", "level": "2", "lecture": 4, "lectureName": "円の性質(II)", "priority": "-", "mid": "M-035"}, {"no": 36, "subject": "II", "unitNum": "②", "unitName": "高次方程式", "level": "2", "lecture": 1, "lectureName": "複素数と2次方程式の解の判別", "priority": "★", "mid": "M-036"}, {"no": 37, "subject": "II", "unitNum": "②", "unitName": "高次方程式", "level": "2", "lecture": 2, "lectureName": "2次方程式の解と係数の関係", "priority": "★", "mid": "M-037"}, {"no": 38, "subject": "II", "unitNum": "②", "unitName": "高次方程式", "level": "2", "lecture": 3, "lectureName": "高次方程式の解法(1)", "priority": "-", "mid": "M-038"}, {"no": 39, "subject": "II", "unitNum": "②", "unitName": "高次方程式", "level": "2", "lecture": 4, "lectureName": "高次方程式の解法(2)", "priority": "-", "mid": "M-039"}, {"no": 40, "subject": "II", "unitNum": "③", "unitName": "図形と方程式", "level": "2", "lecture": 1, "lectureName": "座標、直線の方程式(1)", "priority": "★★★", "mid": "M-040"}, {"no": 41, "subject": "II", "unitNum": "③", "unitName": "図形と方程式", "level": "2", "lecture": 2, "lectureName": "座標、直線の方程式(2)", "priority": "★★★", "mid": "M-041"}, {"no": 42, "subject": "II", "unitNum": "③", "unitName": "図形と方程式", "level": "2", "lecture": 3, "lectureName": "円の方程式(1)", "priority": "★★★", "mid": "M-042"}, {"no": 43, "subject": "II", "unitNum": "③", "unitName": "図形と方程式", "level": "2", "lecture": 4, "lectureName": "円の方程式(2)", "priority": "★★★", "mid": "M-043"}, {"no": 44, "subject": "II", "unitNum": "③", "unitName": "図形と方程式", "level": "2", "lecture": 5, "lectureName": "軌跡", "priority": "★★★", "mid": "M-044"}, {"no": 45, "subject": "II", "unitNum": "③", "unitName": "図形と方程式", "level": "2", "lecture": 6, "lectureName": "軌跡", "priority": "★★★", "mid": "M-045"}, {"no": 46, "subject": "II", "unitNum": "③", "unitName": "図形と方程式", "level": "2", "lecture": 7, "lectureName": "不等式と領域(1)", "priority": "★★★", "mid": "M-046"}, {"no": 47, "subject": "II", "unitNum": "③", "unitName": "図形と方程式", "level": "2", "lecture": 8, "lectureName": "不等式と領域(2)", "priority": "★★★", "mid": "M-047"}, {"no": 48, "subject": "II", "unitNum": "④", "unitName": "三角関数", "level": "2", "lecture": 1, "lectureName": "三角関数の基礎", "priority": "★★", "mid": "M-048"}, {"no": 49, "subject": "II", "unitNum": "④", "unitName": "三角関数", "level": "2", "lecture": 2, "lectureName": "三角関数の基礎", "priority": "★★", "mid": "M-049"}, {"no": 50, "subject": "II", "unitNum": "④", "unitName": "三角関数", "level": "2", "lecture": 3, "lectureName": "加法定理(1)", "priority": "★★", "mid": "M-050"}, {"no": 51, "subject": "II", "unitNum": "④", "unitName": "三角関数", "level": "2", "lecture": 4, "lectureName": "加法定理(2)", "priority": "★★", "mid": "M-051"}, {"no": 52, "subject": "II", "unitNum": "④", "unitName": "三角関数", "level": "2", "lecture": 5, "lectureName": "三角関数の合成", "priority": "★★", "mid": "M-052"}, {"no": 53, "subject": "II", "unitNum": "④", "unitName": "三角関数", "level": "2", "lecture": 6, "lectureName": "三角関数の応用", "priority": "★★", "mid": "M-053"}, {"no": 54, "subject": "II", "unitNum": "④", "unitName": "三角関数", "level": "2", "lecture": 7, "lectureName": "三角関数のグラフ", "priority": "★★", "mid": "M-054"}, {"no": 55, "subject": "II", "unitNum": "⑤", "unitName": "指数関数・対数関数", "level": "2", "lecture": 1, "lectureName": "指数の性質", "priority": "★", "mid": "M-055"}, {"no": 56, "subject": "II", "unitNum": "⑤", "unitName": "指数関数・対数関数", "level": "2", "lecture": 2, "lectureName": "指数関数", "priority": "★", "mid": "M-056"}, {"no": 57, "subject": "II", "unitNum": "⑤", "unitName": "指数関数・対数関数", "level": "2", "lecture": 3, "lectureName": "対数の性質", "priority": "★", "mid": "M-057"}, {"no": 58, "subject": "II", "unitNum": "⑤", "unitName": "指数関数・対数関数", "level": "2", "lecture": 4, "lectureName": "対数関数", "priority": "★", "mid": "M-058"}, {"no": 59, "subject": "II", "unitNum": "⑤", "unitName": "指数関数・対数関数", "level": "2", "lecture": 5, "lectureName": "常用対数", "priority": "★", "mid": "M-059"}, {"no": 60, "subject": "II", "unitNum": "⑥", "unitName": "微分法", "level": "2", "lecture": 1, "lectureName": "導関数と接線", "priority": "★★★", "mid": "M-060"}, {"no": 61, "subject": "II", "unitNum": "⑥", "unitName": "微分法", "level": "2", "lecture": 2, "lectureName": "関数のグラフと極値", "priority": "★★★", "mid": "M-061"}, {"no": 62, "subject": "II", "unitNum": "⑥", "unitName": "微分法", "level": "2", "lecture": 3, "lectureName": "関数の最大・最小", "priority": "★★★", "mid": "M-062"}, {"no": 63, "subject": "II", "unitNum": "⑥", "unitName": "微分法", "level": "2", "lecture": 4, "lectureName": "微分法の応用(不等式)", "priority": "★★★", "mid": "M-063"}, {"no": 64, "subject": "II", "unitNum": "⑥", "unitName": "微分法", "level": "2", "lecture": 5, "lectureName": "微分法の応用(方程式)", "priority": "★★★", "mid": "M-064"}, {"no": 65, "subject": "II", "unitNum": "⑥", "unitName": "微分法", "level": "2", "lecture": 6, "lectureName": "微分法の応用(接線の本数)", "priority": "★★★", "mid": "M-065"}, {"no": 66, "subject": "II", "unitNum": "⑦", "unitName": "積分法", "level": "2", "lecture": 1, "lectureName": "積分の計算", "priority": "★★★", "mid": "M-066"}, {"no": 67, "subject": "II", "unitNum": "⑦", "unitName": "積分法", "level": "2", "lecture": 2, "lectureName": "定積分と面積(1)", "priority": "★★★", "mid": "M-067"}, {"no": 68, "subject": "II", "unitNum": "⑦", "unitName": "積分法", "level": "2", "lecture": 3, "lectureName": "定積分と面積(2)", "priority": "★★★", "mid": "M-068"}, {"no": 69, "subject": "II", "unitNum": "⑦", "unitName": "積分法", "level": "2", "lecture": 4, "lectureName": "積分で表された関数", "priority": "★★★", "mid": "M-069"}, {"no": 70, "subject": "II", "unitNum": "⑦", "unitName": "積分法", "level": "2", "lecture": 5, "lectureName": "絶対値記号を含む関数の定積分", "priority": "★★★", "mid": "M-070"}, {"no": 71, "subject": "B", "unitNum": "", "unitName": "統計的な推測", "level": "2", "lecture": 1, "lectureName": "確率分布(1)", "priority": "★★", "mid": "M-071"}, {"no": 72, "subject": "B", "unitNum": "", "unitName": "統計的な推測", "level": "2", "lecture": 2, "lectureName": "確率分布(2)", "priority": "★★", "mid": "M-072"}, {"no": 73, "subject": "B", "unitNum": "", "unitName": "統計的な推測", "level": "2", "lecture": 3, "lectureName": "確率分布(3)", "priority": "★★", "mid": "M-073"}, {"no": 74, "subject": "B", "unitNum": "", "unitName": "統計的な推測", "level": "2", "lecture": 4, "lectureName": "正規分布(1)", "priority": "-", "mid": "M-074"}, {"no": 75, "subject": "B", "unitNum": "", "unitName": "統計的な推測", "level": "2", "lecture": 5, "lectureName": "正規分布(2)", "priority": "-", "mid": "M-075"}, {"no": 76, "subject": "B", "unitNum": "", "unitName": "統計的な推測", "level": "2", "lecture": 6, "lectureName": "統計的な推測(1)", "priority": "-", "mid": "M-076"}, {"no": 77, "subject": "B", "unitNum": "", "unitName": "統計的な推測", "level": "2", "lecture": 7, "lectureName": "統計的な推測(2)", "priority": "-", "mid": "M-077"}, {"no": 78, "subject": "B", "unitNum": "", "unitName": "統計的な推測", "level": "2", "lecture": 8, "lectureName": "統計的な推測(3)", "priority": "-", "mid": "M-078"}, {"no": 79, "subject": "B", "unitNum": "", "unitName": "統計的な推測", "level": "2", "lecture": 9, "lectureName": "統計的な推測(4)", "priority": "-", "mid": "M-079"}, {"no": 80, "subject": "B", "unitNum": "", "unitName": "統計的な推測", "level": "2", "lecture": 10, "lectureName": "総合演習", "priority": "-", "mid": "M-080"}, {"no": 81, "subject": "B", "unitNum": "", "unitName": "数列", "level": "2", "lecture": 1, "lectureName": "等差数列と等比数列", "priority": "★★★", "mid": "M-081"}, {"no": 82, "subject": "B", "unitNum": "", "unitName": "数列", "level": "2", "lecture": 2, "lectureName": "∑記号と和の計算(1)", "priority": "★★★", "mid": "M-082"}, {"no": 83, "subject": "B", "unitNum": "", "unitName": "数列", "level": "2", "lecture": 3, "lectureName": "∑記号と和の計算(2)", "priority": "★★★", "mid": "M-083"}, {"no": 84, "subject": "B", "unitNum": "", "unitName": "数列", "level": "2", "lecture": 4, "lectureName": "階差数列、和と一般項の関係", "priority": "★★★", "mid": "M-084"}, {"no": 85, "subject": "B", "unitNum": "", "unitName": "数列", "level": "2", "lecture": 5, "lectureName": "格子点の個数", "priority": "★★★", "mid": "M-085"}, {"no": 86, "subject": "B", "unitNum": "", "unitName": "数列", "level": "2", "lecture": 6, "lectureName": "群数列", "priority": "★★★", "mid": "M-086"}, {"no": 87, "subject": "B", "unitNum": "", "unitName": "数列", "level": "2", "lecture": 7, "lectureName": "漸化式(1)", "priority": "★★★", "mid": "M-087"}, {"no": 88, "subject": "B", "unitNum": "", "unitName": "数列", "level": "2", "lecture": 8, "lectureName": "漸化式(2)", "priority": "★★★", "mid": "M-088"}, {"no": 89, "subject": "B", "unitNum": "", "unitName": "数列", "level": "2", "lecture": 9, "lectureName": "数学的帰納法(1)", "priority": "★★★", "mid": "M-089"}, {"no": 90, "subject": "B", "unitNum": "", "unitName": "数列", "level": "2", "lecture": 10, "lectureName": "数学的帰納法(2)", "priority": "★★★", "mid": "M-090"}, {"no": 91, "subject": "B", "unitNum": "", "unitName": "数列", "level": "3", "lecture": 1, "lectureName": "数列(1)（等差数列・等比数列）", "priority": "★★★", "mid": "M-091"}, {"no": 92, "subject": "B", "unitNum": "", "unitName": "数列", "level": "3", "lecture": 2, "lectureName": "数列(2)（∑の計算）", "priority": "★★★", "mid": "M-092"}, {"no": 93, "subject": "B", "unitNum": "", "unitName": "数列", "level": "3", "lecture": 3, "lectureName": "数列(3)（階差数列とその応用）", "priority": "★★★", "mid": "M-093"}, {"no": 94, "subject": "B", "unitNum": "", "unitName": "数列", "level": "3", "lecture": 4, "lectureName": "数列(4)（漸化式とその応用）", "priority": "★★★", "mid": "M-094"}, {"no": 95, "subject": "B", "unitNum": "", "unitName": "数列", "level": "3", "lecture": 5, "lectureName": "数列(5)（漸化式と群数列）", "priority": "★★★", "mid": "M-095"}, {"no": 96, "subject": "B", "unitNum": "", "unitName": "数列", "level": "3", "lecture": 6, "lectureName": "数列(6)（数列の総合演習）", "priority": "★★★", "mid": "M-096"}, {"no": 97, "subject": "C", "unitNum": "①", "unitName": "平面ベクトル", "level": "2", "lecture": 1, "lectureName": "平面ベクトル", "priority": "★", "mid": "M-097"}, {"no": 98, "subject": "C", "unitNum": "①", "unitName": "平面ベクトル", "level": "2", "lecture": 2, "lectureName": "位置ベクトル(1)", "priority": "★", "mid": "M-098"}, {"no": 99, "subject": "C", "unitNum": "①", "unitName": "平面ベクトル", "level": "2", "lecture": 3, "lectureName": "位置ベクトル(2)", "priority": "★", "mid": "M-099"}, {"no": 100, "subject": "C", "unitNum": "①", "unitName": "平面ベクトル", "level": "2", "lecture": 4, "lectureName": "ベクトルの内積(1)", "priority": "★", "mid": "M-100"}, {"no": 101, "subject": "C", "unitNum": "①", "unitName": "平面ベクトル", "level": "2", "lecture": 5, "lectureName": "ベクトルの内積(2)", "priority": "★", "mid": "M-101"}, {"no": 102, "subject": "C", "unitNum": "①", "unitName": "平面ベクトル", "level": "2", "lecture": 6, "lectureName": "ベクトルと領域", "priority": "★★★", "mid": "M-102"}, {"no": 103, "subject": "C", "unitNum": "②", "unitName": "空間ベクトル", "level": "2", "lecture": 1, "lectureName": "空間ベクトル", "priority": "★", "mid": "M-103"}, {"no": 104, "subject": "C", "unitNum": "②", "unitName": "空間ベクトル", "level": "2", "lecture": 2, "lectureName": "空間座標(1)", "priority": "★★★", "mid": "M-104"}, {"no": 105, "subject": "C", "unitNum": "②", "unitName": "空間ベクトル", "level": "2", "lecture": 3, "lectureName": "空間座標(2)", "priority": "★★★", "mid": "M-105"}, {"no": 106, "subject": "C", "unitNum": "②", "unitName": "空間ベクトル", "level": "2", "lecture": 4, "lectureName": "空間座標(3)", "priority": "★★★", "mid": "M-106"}, {"no": 107, "subject": "C", "unitNum": "③", "unitName": "ベクトル", "level": "3", "lecture": 1, "lectureName": "ベクトル(1)（交点の位置ベクトル）", "priority": "★", "mid": "M-107"}, {"no": 108, "subject": "C", "unitNum": "③", "unitName": "ベクトル", "level": "3", "lecture": 2, "lectureName": "ベクトル(2)（内積とその応用）", "priority": "★", "mid": "M-108"}, {"no": 109, "subject": "C", "unitNum": "③", "unitName": "ベクトル", "level": "3", "lecture": 3, "lectureName": "ベクトル(3)（空間座標）", "priority": "★★★", "mid": "M-109"}, {"no": 110, "subject": "C", "unitNum": "③", "unitName": "ベクトル", "level": "3", "lecture": 4, "lectureName": "ベクトル(4)（ベクトルと軌跡）", "priority": "★★★", "mid": "M-110"}, {"no": 111, "subject": "C", "unitNum": "③", "unitName": "ベクトル", "level": "3", "lecture": 5, "lectureName": "ベクトル(5)（平面ベクトルの総合演習）", "priority": "★", "mid": "M-111"}, {"no": 112, "subject": "C", "unitNum": "③", "unitName": "ベクトル", "level": "3", "lecture": 6, "lectureName": "ベクトル(6)（空間ベクトルの総合演習）", "priority": "★", "mid": "M-112"}, {"no": 113, "subject": "I・A・II", "unitNum": "-", "unitName": "総合演習", "level": "3", "lecture": 1, "lectureName": "数と式", "priority": "-", "mid": "M-113"}, {"no": 114, "subject": "I・A・II", "unitNum": "-", "unitName": "総合演習", "level": "3", "lecture": 2, "lectureName": "2次関数(1)", "priority": "★", "mid": "M-114"}, {"no": 115, "subject": "I・A・II", "unitNum": "-", "unitName": "総合演習", "level": "3", "lecture": 3, "lectureName": "2次関数(2)", "priority": "★", "mid": "M-115"}, {"no": 116, "subject": "I・A・II", "unitNum": "-", "unitName": "総合演習", "level": "3", "lecture": 4, "lectureName": "整式と高次方程式", "priority": "-", "mid": "M-116"}, {"no": 117, "subject": "I・A・II", "unitNum": "-", "unitName": "総合演習", "level": "3", "lecture": 5, "lectureName": "場合の数", "priority": "★★", "mid": "M-117"}, {"no": 118, "subject": "I・A・II", "unitNum": "-", "unitName": "総合演習", "level": "3", "lecture": 6, "lectureName": "確率", "priority": "★★", "mid": "M-118"}, {"no": 119, "subject": "I・A・II", "unitNum": "-", "unitName": "総合演習", "level": "3", "lecture": 7, "lectureName": "整数", "priority": "△", "mid": "M-119"}, {"no": 120, "subject": "I・A・II", "unitNum": "-", "unitName": "総合演習", "level": "3", "lecture": 8, "lectureName": "総合演習(1)", "priority": "-", "mid": "M-120"}, {"no": 121, "subject": "I・A・II", "unitNum": "-", "unitName": "総合演習", "level": "3", "lecture": 9, "lectureName": "図形と方程式(1)", "priority": "★★★", "mid": "M-121"}, {"no": 122, "subject": "I・A・II", "unitNum": "-", "unitName": "総合演習", "level": "3", "lecture": 10, "lectureName": "図形と方程式(2)", "priority": "★★★", "mid": "M-122"}, {"no": 123, "subject": "I・A・II", "unitNum": "-", "unitName": "総合演習", "level": "3", "lecture": 11, "lectureName": "三角関数", "priority": "★★", "mid": "M-123"}, {"no": 124, "subject": "I・A・II", "unitNum": "-", "unitName": "総合演習", "level": "3", "lecture": 12, "lectureName": "三角比と平面図形", "priority": "★★", "mid": "M-124"}, {"no": 125, "subject": "I・A・II", "unitNum": "-", "unitName": "総合演習", "level": "3", "lecture": 13, "lectureName": "指数関数・対数関数", "priority": "★", "mid": "M-125"}, {"no": 126, "subject": "I・A・II", "unitNum": "-", "unitName": "総合演習", "level": "3", "lecture": 14, "lectureName": "微分法", "priority": "★★★", "mid": "M-126"}, {"no": 127, "subject": "I・A・II", "unitNum": "-", "unitName": "総合演習", "level": "3", "lecture": 15, "lectureName": "積分法(1)", "priority": "★★★", "mid": "M-127"}, {"no": 128, "subject": "I・A・II", "unitNum": "-", "unitName": "総合演習", "level": "3", "lecture": 16, "lectureName": "積分法(2)", "priority": "★★★", "mid": "M-128"}, {"no": 129, "subject": "I・A・II", "unitNum": "-", "unitName": "総合演習", "level": "3", "lecture": 17, "lectureName": "総合演習(2)", "priority": "-", "mid": "M-129"}, {"no": 130, "subject": "I・A・II・B・C", "unitNum": "①", "unitName": "数学演習", "level": "3・4", "lecture": 1, "lectureName": "関数(1)", "priority": "-", "mid": "M-130"}, {"no": 131, "subject": "I・A・II・B・C", "unitNum": "①", "unitName": "数学演習", "level": "3・4", "lecture": 2, "lectureName": "関数(2)", "priority": "-", "mid": "M-131"}, {"no": 132, "subject": "I・A・II・B・C", "unitNum": "①", "unitName": "数学演習", "level": "3・4", "lecture": 3, "lectureName": "図形と方程式", "priority": "★★★", "mid": "M-132"}, {"no": 133, "subject": "I・A・II・B・C", "unitNum": "①", "unitName": "数学演習", "level": "3・4", "lecture": 4, "lectureName": "場合の数", "priority": "★★", "mid": "M-133"}, {"no": 134, "subject": "I・A・II・B・C", "unitNum": "①", "unitName": "数学演習", "level": "3・4", "lecture": 5, "lectureName": "確率", "priority": "★★", "mid": "M-134"}, {"no": 135, "subject": "I・A・II・B・C", "unitNum": "②", "unitName": "数学演習", "level": "3・4", "lecture": 1, "lectureName": "微分・積分(1)", "priority": "★★★", "mid": "M-135"}, {"no": 136, "subject": "I・A・II・B・C", "unitNum": "②", "unitName": "数学演習", "level": "3・4", "lecture": 2, "lectureName": "微分・積分(2)", "priority": "★★★", "mid": "M-136"}, {"no": 137, "subject": "I・A・II・B・C", "unitNum": "②", "unitName": "数学演習", "level": "3・4", "lecture": 3, "lectureName": "ベクトル", "priority": "★", "mid": "M-137"}, {"no": 138, "subject": "I・A・II・B・C", "unitNum": "②", "unitName": "数学演習", "level": "3・4", "lecture": 4, "lectureName": "数列", "priority": "★★★", "mid": "M-138"}, {"no": 139, "subject": "I・A・II・B・C", "unitNum": "②", "unitName": "数学演習", "level": "3・4", "lecture": 5, "lectureName": "整数", "priority": "△", "mid": "M-139"}];
+const SUBJ_ORDER={"I":1,"A":2,"II":3,"B":4,"C":5,"I・A・II":6,"I・A・II・B・C":7};
+const INTERVALS={"2":14,"1":7,"0":3,"x":1};
+const ML={"2":"◎","1":"○","0":"△","x":"×"};
+const MC={"2":"s2","1":"s1","0":"s0","x":"sx"};
+
+let state={};   // no->{history:[{mark,ts,comment}],next}
+let draft={};
+let openNo=null;
+let editKey=null;  // "no-histIdx" 編集中の履歴
+let editDraft={};  // editKey -> {mark}
+let curFilter="all", curTab="track";
+let pinnedGroupKey=null;
+
+// utils
+function now(){return new Date().toISOString();}
+function todayISO(){const d=new Date();d.setHours(0,0,0,0);return d.toISOString();}
+function addDays(iso,n){const d=new Date(iso);d.setDate(d.getDate()+n);return d.toISOString();}
+function fmtDate(iso){const d=new Date(iso);return(d.getMonth()+1)+"/"+d.getDate();}
+function fmtDT(iso){const d=new Date(iso);const w=["日","月","火","水","木","金","土"][d.getDay()];
+  return(d.getMonth()+1)+"/"+d.getDate()+"("+w+") "+String(d.getHours()).padStart(2,"0")+":"+String(d.getMinutes()).padStart(2,"0");}
+function isDue(iso){return new Date(iso)<=new Date(todayISO());}
+function latestMark(no){const s=state[no];if(!s||!s.history.length)return null;return s.history[s.history.length-1].mark;}
+function esc(s){return String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));}
+function gkey(d){return "数"+d.subject+(d.unitName?" ・ "+d.unitName:"")+(d.unitNum?" "+d.unitNum:"");}
+function recalcNext(no){
+  if(!state[no]||!state[no].history.length){if(state[no])state[no].next=null;return;}
+  const last=state[no].history[state[no].history.length-1];
+  state[no].next=addDays(last.ts.slice(0,10)+"T00:00:00.000Z",INTERVALS[last.mark]);
+}
+
+let toastTimer;
+function toast(msg,color){
+  const t=document.getElementById("toast");t.style.background=color||"#1a7a4c";
+  t.textContent=msg;t.classList.add("show");
+  clearTimeout(toastTimer);toastTimer=setTimeout(()=>t.classList.remove("show"),1800);
+}
+
+// tabs
+document.querySelectorAll(".tab").forEach(t=>{
+  t.onclick=()=>{
+    curTab=t.dataset.tab;
+    document.querySelectorAll(".tab").forEach(x=>x.classList.toggle("on",x.dataset.tab===curTab));
+    document.querySelectorAll(".page").forEach(x=>x.classList.toggle("on",x.id==="page-"+curTab));
+    if(curTab==="db")renderDb();
+    else if(curTab==="yori")renderYori();
+    else renderTrack();
+  };
+});
+
+// record new
+function recordEntry(no){
+  const mark=draft[no];if(!mark)return;
+  const ta=document.getElementById("cmt-"+no);
+  const comment=ta?ta.value.trim():"";
+  if(!state[no])state[no]={history:[],next:null};
+  state[no].history.push({mark,ts:now(),comment});
+  recalcNext(no);
+  draft[no]=null;
+  const d=DATA.find(x=>x.no===no);
+  if(d)pinnedGroupKey=gkey(d);
+  renderTrack();renderStats();
+  toast(ML[mark]+" を記録 → 次回 "+fmtDate(state[no].next));
+  // 自動でGASに保存
+  syncToGas();
+}
+
+// delete history entry
+function delEntry(no,idx){
+  if(!state[no])return;
+  // メモリから削除
+  state[no].history.splice(idx,1);
+  if(!state[no].history.length)delete state[no];
+  else recalcNext(no);
+  if(editKey===no+"-"+idx)editKey=null;
+  renderTrack();renderStats();
+  toast("削除しました","#c4453b");
+  // スプシを全置換で同期（削除も反映される）
+  syncToGas();
+}
+
+// GASに論理削除（deleted=TRUE）を指示
+
+// save edit
+function saveEdit(no,idx){
+  const s=state[no];if(!s)return;
+  const ek=no+"-"+idx;
+  const newMark=editDraft[ek]||s.history[idx].mark;
+  const ta=document.getElementById("edit-cmt-"+ek);
+  const newCmt=ta?ta.value.trim():s.history[idx].comment;
+  s.history[idx].mark=newMark;
+  s.history[idx].comment=newCmt;
+  recalcNext(no);
+  editKey=null;
+  renderTrack();renderStats();
+  toast("編集を保存しました","#3b82c4");
+  syncToGas();
+}
+
+// stats
+function renderStats(){
+  const vals=Object.values(state).filter(Boolean);
+  const c={"2":0,"1":0,"0":0,"x":0};let touched=0;
+  vals.forEach(s=>{if(s.history.length){touched++;c[s.history[s.history.length-1].mark]++;}});
+  document.getElementById("stats").innerHTML=
+    sb(touched+"/"+DATA.length,"着手","")+sb(c["2"],"◎","2")+sb(c["1"],"○","1")+sb(c["0"],"△","0")+sb(c["x"],"×","x");
+  // 統計バッジにクリックイベントを付与
+  document.querySelectorAll("#stats .stat[data-mark]").forEach(el=>{
+    el.addEventListener("click", function(){ openMarkModal(this.dataset.mark); });
+  });
+}
+function sb(n,l,mark){
+  const mid_attr = mark ? ' data-mark="'+mark+'"' : '';
+  return '<div class="stat"'+mid_attr+'><div class="n">'+n+'</div><div class="l">'+l+'</div></div>';
+}
+
+// filters
+function buildFilters(){
+  const subs=[...new Set(DATA.map(d=>d.subject))].sort((a,b)=>SUBJ_ORDER[a]-SUBJ_ORDER[b]);
+  const w=document.getElementById("filters");w.innerHTML="";
+  w.appendChild(mkChip("すべて","all"));
+  subs.forEach(s=>w.appendChild(mkChip("数"+s,s)));
+  const sel=document.getElementById("db-subj");
+  sel.innerHTML='<option value="">科目：すべて</option>';
+  subs.forEach(s=>{const o=document.createElement("option");o.value=s;o.textContent="数"+s;sel.appendChild(o);});
+}
+function mkChip(label,val){
+  const c=document.createElement("div");
+  c.className="chip"+(curFilter===val?" active":"");
+  c.textContent=label;
+  c.onclick=()=>{curFilter=val;buildFilters();renderTrack();};
+  return c;
+}
+
+// ---- TRACK RENDER ----
+function renderTrack(){
+  renderStats();
+  let list=DATA.slice();
+  if(curFilter!=="all")list=list.filter(d=>d.subject===curFilter);
+  list.sort((a,b)=>SUBJ_ORDER[a.subject]-SUBJ_ORDER[b.subject]||a.no-b.no);
+
+  const groups=new Map();
+  list.forEach(d=>{const k=gkey(d);if(!groups.has(k))groups.set(k,[]);groups.get(k).push(d);});
+
+  const banner=document.getElementById("pin-banner");
+  const pinLabel=document.getElementById("pin-label");
+  if(pinnedGroupKey&&groups.has(pinnedGroupKey)){banner.classList.remove("hidden");pinLabel.textContent=pinnedGroupKey;}
+  else banner.classList.add("hidden");
+
+  const cont=document.getElementById("list-track");cont.innerHTML="";
+  const keys=[];
+  if(pinnedGroupKey&&groups.has(pinnedGroupKey))keys.push(pinnedGroupKey);
+  groups.forEach((_,k)=>{if(k!==pinnedGroupKey)keys.push(k);});
+
+  keys.forEach(k=>{
+    const items=groups.get(k);const isPinned=k===pinnedGroupKey;
+    const wrap=document.createElement("div");wrap.className="group-wrap"+(isPinned?" pinned":"");
+    const gh=document.createElement("div");gh.className="group-head";gh.textContent=(isPinned?"📌 ":"")+k;
+    wrap.appendChild(gh);
+    items.forEach(d=>wrap.appendChild(mkRow(d,isPinned)));
+    cont.appendChild(wrap);
+  });
+}
+
+function mkRow(d,isPinned){
+  const s=state[d.no];const lm=latestMark(d.no);const cnt=s?s.history.length:0;
+  const row=document.createElement("div");
+  row.className="row"+(isPinned?" pinned-row":"")+(d.priority==="★★★"?" juuten-row":"");
+  const priCls=d.priority==="★★★"?"p3":d.priority==="★★"?"p2":d.priority==="★"?"p1":"pd";
+  let nextHtml="";
+  if(s&&s.next){const due=isDue(s.next);nextHtml='<span class="next'+(due?" due":"")+'">'+(due?"▶ 今日":"次回 "+fmtDate(s.next))+'</span>';}
+
+  const top=document.createElement("div");top.className="row-top";
+  top.innerHTML=
+    '<div class="row-info">'+
+      '<div class="row-title">第'+d.lecture+'講 '+esc(d.lectureName)+'</div>'+'<div style="font-size:9px;color:#b0a898;margin-top:1px;letter-spacing:.04em;">'+d.mid+'</div>'+
+      '<div class="row-meta">'+
+        '<span class="badge">数'+d.subject+(d.level?" Lv"+d.level:"")+'</span>'+
+        (d.priority&&d.priority!=="-"?'<span class="pri '+priCls+'">'+d.priority+'</span>':'')+
+        (d.priority==="★★★"?'<span class="juuten">🔥 重点</span>':'')+
+        nextHtml+
+      '</div>'+
+    '</div>'+
+    '<div style="text-align:center"><div class="cur-mark '+(lm?MC[lm]:"")+'">'+(lm?ML[lm]:"–")+'</div>'+(cnt?'<div class="cnt">'+cnt+'回</div>':'')+'</div>';
+  top.onclick=()=>{openNo=(openNo===d.no?null:d.no);if(openNo===d.no&&draft[d.no]===undefined)draft[d.no]=lm||null;renderTrack();};
+  row.appendChild(top);
+
+  const panel=document.createElement("div");panel.className="panel"+(openNo===d.no?" open":"");
+  if(openNo===d.no){
+    const pin=document.createElement("div");pin.className="panel-in";
+    // mark selector
+    const sel=draft[d.no];
+    const mkRowEl=document.createElement("div");mkRowEl.className="mk-row";
+    [["2","◎"],["1","○"],["0","△"],["x","×"]].forEach(([m,lab])=>{
+      const b=document.createElement("div");b.className="mk "+MC[m]+(sel===m?" sel":"");b.textContent=lab;
+      b.onclick=(e)=>{e.stopPropagation();draft[d.no]=m;renderTrack();};mkRowEl.appendChild(b);
+    });
+    pin.appendChild(mkRowEl);
+    // comment
+    const ta=document.createElement("textarea");ta.className="cmt";ta.id="cmt-"+d.no;ta.rows=2;
+    ta.placeholder="コメント（任意）例：第3問ミス…";ta.onclick=(e)=>e.stopPropagation();
+    pin.appendChild(ta);
+    // record button
+    const btn=document.createElement("button");btn.className="rec-btn";btn.textContent="記録する ✓";btn.disabled=!sel;
+    btn.onclick=(e)=>{e.stopPropagation();recordEntry(d.no);};pin.appendChild(btn);
+    if(!sel)pin.appendChild(Object.assign(document.createElement("div"),{className:"hint",textContent:"◎○△×を選ぶと記録できます"}));
+    // history
+    if(s&&s.history.length){
+      const hist=document.createElement("div");hist.className="hist";
+      hist.innerHTML='<div class="hist-h">これまでの記録（'+s.history.length+'回）　タップで編集</div>';
+      s.history.slice().reverse().forEach((h,ri)=>{
+        const realIdx=s.history.length-1-ri;
+        const ek=d.no+"-"+realIdx;
+        const isEditing=editKey===ek;
+        const item=document.createElement("div");item.className="hist-item";
+
+        // 表示行
+        const hrow=document.createElement("div");hrow.className="hist-row";
+        hrow.innerHTML=
+          '<div class="hi-mark '+MC[h.mark]+'">'+ML[h.mark]+'</div>'+
+          '<div class="hi-body">'+
+            '<div class="hi-date">'+fmtDT(h.ts)+'</div>'+
+            (h.comment?'<div class="hi-cmt">'+esc(h.comment)+'</div>':'')+
+            (!isEditing?'<div class="hi-hint">タップして編集</div>':'')+
+          '</div>'+
+          '<div class="hi-del">削除</div>';
+        hrow.querySelector(".hi-del").onclick=(e)=>{e.stopPropagation();delEntry(d.no,realIdx);};
+        hrow.onclick=(e)=>{
+          e.stopPropagation();
+          editKey=isEditing?null:ek;
+          if(!isEditing)editDraft[ek]=h.mark;
+          renderTrack();
+        };
+        item.appendChild(hrow);
+
+        // 編集フォーム
+        if(isEditing){
+          const ef=document.createElement("div");ef.className="edit-form";
+          ef.onclick=(e)=>e.stopPropagation();
+          const emkRow=document.createElement("div");emkRow.className="edit-mk-row";
+          [["2","◎"],["1","○"],["0","△"],["x","×"]].forEach(([m,lab])=>{
+            const b=document.createElement("div");
+            b.className="edit-mk "+MC[m]+(editDraft[ek]===m?" sel":"");b.textContent=lab;
+            b.onclick=(e)=>{e.stopPropagation();editDraft[ek]=m;renderTrack();};emkRow.appendChild(b);
+          });
+          ef.appendChild(emkRow);
+          const eta=document.createElement("textarea");eta.className="cmt";eta.id="edit-cmt-"+ek;eta.rows=2;
+          eta.placeholder="コメント（任意）";eta.value=h.comment||"";eta.onclick=(e)=>e.stopPropagation();
+          ef.appendChild(eta);
+          const ebtns=document.createElement("div");ebtns.className="edit-btns";
+          const saveB=document.createElement("button");saveB.className="save-btn";saveB.textContent="保存する";
+          saveB.onclick=(e)=>{e.stopPropagation();saveEdit(d.no,realIdx);};
+          const cancelB=document.createElement("button");cancelB.className="cancel-btn";cancelB.textContent="キャンセル";
+          cancelB.onclick=(e)=>{e.stopPropagation();editKey=null;renderTrack();};
+          ebtns.appendChild(saveB);ebtns.appendChild(cancelB);ef.appendChild(ebtns);
+          item.appendChild(ef);
+        }
+        hist.appendChild(item);
+      });
+      pin.appendChild(hist);
+    }
+    panel.appendChild(pin);
+  }
+  row.appendChild(panel);
+  return row;
+}
+
+// ---- YORI-RIKAI RENDER ----
+function renderYori(){
+  renderStats();
+  const targets=DATA.filter(d=>{
+    if(d.priority!=="★★★"&&d.priority!=="★★")return false;
+    const lm=latestMark(d.no);
+    return lm==="0"||lm==="x";
+  });
+  targets.sort((a,b)=>{
+    // ×を△より上に
+    const ma=latestMark(a.no),mb=latestMark(b.no);
+    if(ma!==mb)return ma==="x"?-1:1;
+    return SUBJ_ORDER[a.subject]-SUBJ_ORDER[b.subject]||a.no-b.no;
+  });
+  const cont=document.getElementById("list-yori");cont.innerHTML="";
+  if(!targets.length){
+    cont.innerHTML='<div class="empty">🎉 要理解の重点講義はありません！<br><span style="font-size:11px">★★以上で△・×の記録がある講義がここに表示されます</span></div>';
+    return;
+  }
+  let lastMark="";
+  targets.forEach(d=>{
+    const lm=latestMark(d.no);
+    if(lm!==lastMark){
+      lastMark=lm;
+      const gh=document.createElement("div");gh.className="group-head";
+      gh.textContent=(lm==="x"?"× まだ理解できていない":"△ 要理解・3回復習");
+      cont.appendChild(gh);
+    }
+    const row=document.createElement("div");row.className="yori-row";
+    const s=state[d.no];
+    const lastH=s&&s.history.length?s.history[s.history.length-1]:null;
+    row.innerHTML=
+      '<div class="yori-title">第'+d.lecture+'講 '+esc(d.lectureName)+'</div>'+
+      '<div class="yori-meta">'+
+        '<span class="badge">数'+d.subject+(d.level?" Lv"+d.level:"")+'</span>'+
+        (d.priority==="★★★"?'<span class="juuten">🔥 重点</span>':'<span class="pri p2">★★</span>')+
+        '<span class="tm '+MC[lm]+'">'+ML[lm]+'</span>'+
+        (lastH?'<span style="color:var(--muted);font-size:10px">'+fmtDate(lastH.ts)+'記録</span>':'')+
+        (lastH&&lastH.comment?'<span style="color:var(--muted);font-size:10px">「'+esc(lastH.comment.slice(0,20))+(lastH.comment.length>20?"…":"")+'」</span>':'')+
+      '</div>';
+    cont.appendChild(row);
+  });
+}
+
+// ---- DB RENDER ----
+function getAllHistory(){
+  const rows=[];
+  DATA.forEach(d=>{
+    const s=state[d.no];if(!s)return;
+    s.history.forEach((h,i)=>{
+      const nextDate=(i===s.history.length-1&&s.next)?fmtDate(s.next):"";
+      rows.push({...d,...h,nextDate});
+    });
+  });
+  return rows.sort((a,b)=>new Date(b.ts)-new Date(a.ts));
+}
+function renderDb(){
+  const sf=document.getElementById("db-subj").value;
+  const mf=document.getElementById("db-mark").value;
+  let rows=getAllHistory();
+  if(sf)rows=rows.filter(r=>r.subject===sf);
+  if(mf)rows=rows.filter(r=>r.mark===mf);
+  document.getElementById("db-count").textContent="📋 "+rows.length+" 件";
+  const tbody=document.getElementById("db-body");tbody.innerHTML="";
+  if(!rows.length){tbody.innerHTML='<tr><td colspan="8" style="text-align:center;padding:30px;color:#8a8275">記録がまだありません</td></tr>';return;}
+  rows.forEach(r=>{
+    const tr=document.createElement("tr");
+    tr.innerHTML=
+      '<td style="white-space:nowrap;font-size:11px">'+fmtDT(r.ts)+'</td>'+
+      '<td><span class="badge">数'+r.subject+'</span></td>'+
+      '<td style="font-size:11px">'+esc(r.unitName||"")+'</td>'+
+      '<td style="text-align:center">第'+r.lecture+'</td>'+
+      '<td>'+esc(r.lectureName)+'</td>'+
+      '<td style="text-align:center"><span class="tm '+MC[r.mark]+'">'+ML[r.mark]+'</span></td>'+
+      '<td style="text-align:center;font-size:11px">'+r.nextDate+'</td>'+
+      '<td style="font-size:11px;color:#555">'+esc(r.comment||"")+'</td>';
+    tbody.appendChild(tr);
+  });
+}
+document.getElementById("db-subj").onchange=renderDb;
+document.getElementById("db-mark").onchange=renderDb;
+
+// CSV
+document.getElementById("dl-btn").onclick=()=>{
+  const sf=document.getElementById("db-subj").value,mf=document.getElementById("db-mark").value;
+  let rows=getAllHistory();
+  if(sf)rows=rows.filter(r=>r.subject===sf);
+  if(mf)rows=rows.filter(r=>r.mark===mf);
+  if(!rows.length){toast("記録がありません","#c4453b");return;}
+  const BOM="\uFEFF";
+  const hdr=["日時","科目","単元番号","単元名","講","講義名","マーク","優先度","次回復習日","コメント"].join(",");
+  const csv=BOM+hdr+"\n"+rows.map(r=>
+    [fmtDT(r.ts),"数"+r.subject,r.unitNum||"",r.unitName||"","第"+r.lecture+"講",r.lectureName,ML[r.mark],r.priority||"-",r.nextDate,r.comment||""]
+    .map(v=>'"'+String(v).replace(/"/g,'""')+'"').join(",")
+  ).join("\n");
+  const blob=new Blob([csv],{type:"text/csv;charset=utf-8"});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement("a");a.href=url;
+  const n=new Date();a.download="数学復習記録_"+(n.getMonth()+1)+""+n.getDate()+".csv";
+  document.body.appendChild(a);a.click();document.body.removeChild(a);URL.revokeObjectURL(url);
+  toast("CSVをダウンロードしました 📥");
+};
+
+
+
+// ===== 評価一覧モーダル =====
+function openMarkModal(mark) {
+  const labelMap = {"2":"◎ ほぼカンペキ","1":"○ 理解した","0":"△ 要理解","x":"× 未達成"};
+  const colorMap = {"2":"var(--s2)","1":"var(--s1)","0":"var(--s0)","x":"var(--sx)"};
+
+  const targets = DATA.filter(d => latestMark(d.no) === mark);
+  targets.sort((a,b) => SUBJ_ORDER[a.subject]-SUBJ_ORDER[b.subject] || a.no-b.no);
+
+  const titleEl = document.getElementById("modal-title");
+  titleEl.innerHTML =
+    '<span style="color:'+colorMap[mark]+'">'+labelMap[mark]+'</span>' +
+    '<span style="font-size:12px;color:var(--muted);margin-left:8px;">'+targets.length+'講</span>';
+
+  const list = document.getElementById("modal-list");
+  list.innerHTML = "";
+
+  if (!targets.length) {
+    list.innerHTML = '<div style="text-align:center;padding:30px;color:var(--muted);font-size:13px;">該当する講義はありません</div>';
+  } else {
+    targets.forEach(function(d) {
+      const item = document.createElement("div");
+      item.className = "modal-item";
+      const s = state[d.no];
+      const lastH = s && s.history.length ? s.history[s.history.length-1] : null;
+      item.innerHTML =
+        '<div class="modal-item-info">' +
+          '<div class="modal-item-title">第'+d.lecture+'講 '+esc(d.lectureName)+'</div>' +
+          '<div class="modal-item-sub">数'+d.subject+(d.unitName?' ・ '+d.unitName:'') +
+            (lastH?' ／ '+fmtDate(lastH.ts)+'記録':'') +
+            (lastH&&lastH.comment?' 「'+lastH.comment.slice(0,15)+(lastH.comment.length>15?'…':'')+'」':'') +
+          '</div>' +
+          '<div class="modal-item-mid">'+d.mid+'</div>' +
+        '</div>' +
+        '<div class="modal-arrow">›</div>';
+      item.addEventListener("click", function(){ jumpToLecture(d.no); });
+      list.appendChild(item);
+    });
+  }
+
+  const overlay = document.getElementById("modal-overlay");
+  overlay.classList.remove("hidden");
+}
+
+function closeModal() {
+  document.getElementById("modal-overlay").classList.add("hidden");
+}
+
+function jumpToLecture(no) {
+  closeModal();
+  // 講義一覧タブに切り替え
+  curTab = "track";
+  document.querySelectorAll(".tab").forEach(x=>x.classList.toggle("on",x.dataset.tab==="track"));
+  document.querySelectorAll(".page").forEach(x=>x.classList.toggle("on",x.id==="page-track"));
+  // 科目フィルターをリセット
+  const d = DATA.find(x => x.no === no);
+  if (d) {
+    curFilter = d.subject;
+    buildFilters();
+  }
+  // 対象講義を開いてレンダリング
+  openNo = no;
+  draft[no] = latestMark(no) || null;
+  renderTrack();
+  // スクロール（少し遅延してDOM確定後）
+  setTimeout(() => {
+    const rows = document.querySelectorAll(".row");
+    rows.forEach(row => {
+      if (row.querySelector(".modal-item-mid")) return; // モーダル内は無視
+    });
+    // row-titleにno情報を持たせていないので、mid表示で特定
+    const allText = document.querySelectorAll(".row");
+    // group-wrapの先頭（ピン留め）にスクロール
+    const pinBanner = document.getElementById("pin-banner");
+    if (pinBanner && !pinBanner.classList.contains("hidden")) {
+      pinBanner.scrollIntoView({ behavior:"smooth", block:"start" });
+    } else {
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+  }, 120);
+}
+
+// ===== GAS連携 =====
+const GAS_URL = "https://script.google.com/macros/s/AKfycbxFIOuob2eIdx8QUDd_P9WmFBQ5c2Cbba2UKeHilO3uY56YsWX2kFekrOqwfMfPYY8/exec";
+let syncStatus = "idle"; // idle / syncing / ok / error
+
+function setSyncStatus(s, msg) {
+  syncStatus = s;
+  const el = document.getElementById("sync-status");
+  if (!el) return;
+  const map = {
+    idle:    { icon:"💾", text:"未保存", color:"#a09888" },
+    syncing: { icon:"⏳", text:"保存中…", color:"#d98a23" },
+    ok:      { icon:"☁️", text: msg||"保存済", color:"#1a7a4c" },
+    error:   { icon:"⚠️", text: msg||"エラー", color:"#c4453b" },
+    loading: { icon:"⏳", text:"読込中…", color:"#3b82c4" },
+  };
+  const m = map[s] || map.idle;
+  el.textContent = m.icon + " " + m.text;
+  el.style.color = m.color;
+}
+
+// 全記録をGASに保存
+async function syncToGas() {
+  if (syncStatus === "syncing") return;
+  setSyncStatus("syncing");
+  try {
+    const records = [];
+    Object.keys(state).forEach(no => {
+      const s = state[no]; if (!s) return;
+      const d = DATA.find(x => x.no === parseInt(no));
+      if (!d) return;
+      s.history.forEach(h => {
+        records.push({ mid: d.mid, mark: h.mark, ts: h.ts, comment: h.comment || "" });
+      });
+    });
+    const res = await fetch(GAS_URL, {
+      method: "POST",
+      headers: { "Content-Type": "text/plain;charset=utf-8" },
+      body: JSON.stringify({ action: "replaceAll", records })
+    });
+    const json = await res.json();
+    if (json.ok) {
+      setSyncStatus("ok", "☁️ 同期済 " + records.length + "件");
+      toast("スプレッドシートに保存しました (" + records.length + "件)");
+    } else {
+      setSyncStatus("error", json.error);
+      toast("保存エラー: " + json.error, "#c4453b");
+    }
+  } catch(e) {
+    setSyncStatus("error", "通信エラー");
+    toast("通信エラー: " + e.message, "#c4453b");
+  }
+}
+
+// 起動時に全記録をGASから読み込み
+async function loadFromGas() {
+  setSyncStatus("loading");
+  try {
+    const res = await fetch(GAS_URL + "?action=loadAll");
+    const json = await res.json();
+    if (!json.ok) throw new Error(json.error);
+
+    // stateを再構築
+    state = {};
+    const INTERVALS = {"2":14,"1":7,"0":3,"x":1};
+    json.records.forEach(r => {
+      const d = DATA.find(x => x.mid === r.mid);
+      if (!d) return;
+      const no = d.no;
+      if (!state[no]) state[no] = { history: [], next: null };
+      state[no].history.push({ mark: String(r.mark), ts: String(r.ts), comment: r.comment || "" });
+    });
+    // 各noのnextを再計算
+    Object.keys(state).forEach(no => {
+      recalcNext(parseInt(no));
+    });
+
+    setSyncStatus("ok", "☁️ " + json.records.length + "件読込");
+    renderStats(); renderTrack();
+    toast("記録を読み込みました (" + json.records.length + "件)");
+  } catch(e) {
+    setSyncStatus("error", "読込失敗");
+    toast("読込エラー: " + e.message, "#c4453b");
+  }
+}
+
+// init
+buildFilters();renderStats();renderTrack();
+// 起動時にGASから読み込み
+loadFromGas();
+</script>
+</body>
+</html>
